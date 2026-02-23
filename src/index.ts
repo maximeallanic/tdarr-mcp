@@ -12,6 +12,19 @@ import {
   getQueue,
   pauseWorker,
   resumeWorker,
+  getFlows,
+  getFlow,
+  createFlow,
+  updateFlow,
+  deleteFlow,
+  applyFlowToLibrary,
+  getSettings,
+  updateSettings,
+  getPlugins,
+  getPluginDetails,
+  getNodes,
+  updateNodeSettings,
+  getNodeLogs,
   TdarrApiError,
 } from "./tdarr.js";
 
@@ -205,6 +218,304 @@ server.tool(
       };
     } catch (err) {
       logger.error(err, "resume_worker failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 9. get_flows
+server.tool("get_flows", "List all Tdarr flows", {}, async () => {
+  try {
+    const result = await getFlows();
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  } catch (err) {
+    logger.error(err, "get_flows failed");
+    return errorResult(err);
+  }
+});
+
+// 10. get_flow
+server.tool(
+  "get_flow",
+  "Get a specific Tdarr flow definition",
+  {
+    flow_id: z.string().describe("The ID of the flow"),
+  },
+  async ({ flow_id }) => {
+    try {
+      const result = await getFlow(flow_id);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err) {
+      logger.error(err, "get_flow failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 11. create_flow
+server.tool(
+  "create_flow",
+  "Create a new Tdarr flow",
+  {
+    name: z.string().describe("Name of the flow"),
+    nodes: z
+      .record(z.unknown())
+      .optional()
+      .default({})
+      .describe("Flow nodes definition"),
+    edges: z
+      .array(z.unknown())
+      .optional()
+      .default([])
+      .describe("Flow edges definition"),
+  },
+  async ({ name, nodes, edges }) => {
+    try {
+      const result = await createFlow(name, nodes, edges);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Flow created with ID ${result.id}.\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+      };
+    } catch (err) {
+      logger.error(err, "create_flow failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 12. update_flow
+server.tool(
+  "update_flow",
+  "Update an existing Tdarr flow",
+  {
+    flow_id: z.string().describe("The ID of the flow to update"),
+    updates: z.record(z.unknown()).describe("Fields to update on the flow"),
+  },
+  async ({ flow_id, updates }) => {
+    try {
+      const result = await updateFlow(flow_id, updates);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Flow ${flow_id} updated.\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+      };
+    } catch (err) {
+      logger.error(err, "update_flow failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 13. delete_flow
+server.tool(
+  "delete_flow",
+  "Delete a Tdarr flow",
+  {
+    flow_id: z.string().describe("The ID of the flow to delete"),
+  },
+  async ({ flow_id }) => {
+    try {
+      const result = await deleteFlow(flow_id);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Flow ${flow_id} deleted.\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+      };
+    } catch (err) {
+      logger.error(err, "delete_flow failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 14. apply_flow_to_library
+server.tool(
+  "apply_flow_to_library",
+  "Apply a flow to a Tdarr library",
+  {
+    library_id: z.string().describe("The ID of the library"),
+    flow_id: z.string().describe("The ID of the flow to apply"),
+  },
+  async ({ library_id, flow_id }) => {
+    try {
+      const result = await applyFlowToLibrary(library_id, flow_id);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Flow ${flow_id} applied to library ${library_id}.\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+      };
+    } catch (err) {
+      logger.error(err, "apply_flow_to_library failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 15. get_settings
+server.tool(
+  "get_settings",
+  "Get all Tdarr global settings",
+  {},
+  async () => {
+    try {
+      const result = await getSettings();
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err) {
+      logger.error(err, "get_settings failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 16. update_settings
+server.tool(
+  "update_settings",
+  "Update Tdarr global settings",
+  {
+    setting_id: z.string().describe("The ID of the setting to update"),
+    updates: z.record(z.unknown()).describe("Fields to update"),
+  },
+  async ({ setting_id, updates }) => {
+    try {
+      const result = await updateSettings(setting_id, updates);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Setting ${setting_id} updated.\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+      };
+    } catch (err) {
+      logger.error(err, "update_settings failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 17. get_plugins
+server.tool(
+  "get_plugins",
+  "List all available Tdarr plugins",
+  {},
+  async () => {
+    try {
+      const result = await getPlugins();
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err) {
+      logger.error(err, "get_plugins failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 18. get_plugin_details
+server.tool(
+  "get_plugin_details",
+  "Get details of a specific Tdarr plugin",
+  {
+    plugin_id: z.string().describe("The ID of the plugin"),
+  },
+  async ({ plugin_id }) => {
+    try {
+      const result = await getPluginDetails(plugin_id);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err) {
+      logger.error(err, "get_plugin_details failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 19. get_nodes
+server.tool(
+  "get_nodes",
+  "Get all Tdarr nodes with full details (settings, workers, GPU/CPU capabilities, version)",
+  {},
+  async () => {
+    try {
+      const result = await getNodes();
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err) {
+      logger.error(err, "get_nodes failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 20. update_node_settings
+server.tool(
+  "update_node_settings",
+  "Update settings of a specific Tdarr node",
+  {
+    node_id: z.string().describe("The ID of the node to update"),
+    settings: z.record(z.unknown()).describe("Settings to update on the node"),
+  },
+  async ({ node_id, settings }) => {
+    try {
+      const result = await updateNodeSettings(node_id, settings);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Node ${node_id} settings updated.\n${JSON.stringify(result, null, 2)}`,
+          },
+        ],
+      };
+    } catch (err) {
+      logger.error(err, "update_node_settings failed");
+      return errorResult(err);
+    }
+  },
+);
+
+// 21. get_node_logs
+server.tool(
+  "get_node_logs",
+  "Get recent log entries for a specific Tdarr node",
+  {
+    node_id: z.string().describe("The ID of the node"),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .default(100)
+      .describe("Maximum number of log entries to return (default: 100)"),
+  },
+  async ({ node_id, limit }) => {
+    try {
+      const result = await getNodeLogs(node_id, limit);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (err) {
+      logger.error(err, "get_node_logs failed");
       return errorResult(err);
     }
   },

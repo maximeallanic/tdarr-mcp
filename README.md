@@ -2,9 +2,11 @@
 
 MCP server for interacting with [Tdarr](https://tdarr.io/) — a distributed transcoding system for video/audio libraries.
 
-Exposes 8 tools for monitoring and controlling Tdarr via the Model Context Protocol.
+Exposes 21 tools for monitoring and controlling Tdarr via the Model Context Protocol.
 
 ## Tools
+
+### Core
 
 | Tool | Description |
 |------|-------------|
@@ -16,6 +18,34 @@ Exposes 8 tools for monitoring and controlling Tdarr via the Model Context Proto
 | `get_queue` | Get queue status (pending, processing, error counts) |
 | `pause_worker` | Pause a worker by setting its limit to 0 |
 | `resume_worker` | Resume a paused worker |
+
+### Flow management
+
+| Tool | Description |
+|------|-------------|
+| `get_flows` | List all flows |
+| `get_flow` | Get a specific flow definition |
+| `create_flow` | Create a new flow |
+| `update_flow` | Update an existing flow |
+| `delete_flow` | Delete a flow |
+| `apply_flow_to_library` | Apply a flow to a library |
+
+### Settings & plugins
+
+| Tool | Description |
+|------|-------------|
+| `get_settings` | Get all global settings |
+| `update_settings` | Update global settings |
+| `get_plugins` | List all available plugins |
+| `get_plugin_details` | Get details of a specific plugin |
+
+### Node management
+
+| Tool | Description |
+|------|-------------|
+| `get_nodes` | Get all nodes with full details (settings, workers, GPU/CPU, version) |
+| `update_node_settings` | Update settings of a specific node |
+| `get_node_logs` | Get recent log entries for a node |
 
 ## Configuration
 
