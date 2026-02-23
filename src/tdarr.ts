@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import pino from "pino";
 
 const logger = pino({ name: "tdarr-client" });
@@ -55,7 +56,7 @@ async function request<T>(
       error.cause?.toString().includes("ECONNREFUSED")
     ) {
       throw new TdarrApiError(
-        `Cannot connect to Tdarr at ${TDARR_URL} \u2014 is the server running?`,
+        `Cannot connect to Tdarr at ${TDARR_URL} — is the server running?`,
       );
     }
     throw new TdarrApiError(`Tdarr request failed: ${error.message}`);
@@ -138,5 +139,160 @@ export async function resumeWorker(
       workerType,
       numberToAdd: count,
     },
+  });
+}
+
+// --- Flow management ---
+
+export async function getFlows(): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "FlowEditorJSONDB",
+      mode: "getAll",
+      docID: "table1",
+      obj: {},
+    },
+  });
+}
+
+export async function getFlow(flowId: string): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "FlowEditorJSONDB",
+      mode: "getById",
+      docID: flowId,
+      obj: {},
+    },
+  });
+}
+
+export async function createFlow(
+  name: string,
+  nodes: Record<string, unknown> = {},
+  edges: unknown[] = [],
+): Promise<{ id: string; flow: unknown }> {
+  const id = randomUUID();
+  const result = await request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "FlowEditorJSONDB",
+      mode: "insert",
+      docID: id,
+      obj: { name, nodes, edges },
+    },
+  });
+  return { id, flow: result };
+}
+
+export async function updateFlow(
+  flowId: string,
+  updates: Record<string, unknown>,
+): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "FlowEditorJSONDB",
+      mode: "update",
+      docID: flowId,
+      obj: updates,
+    },
+  });
+}
+
+export async function deleteFlow(flowId: string): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "FlowEditorJSONDB",
+      mode: "delete",
+      docID: flowId,
+      obj: {},
+    },
+  });
+}
+
+export async function applyFlowToLibrary(
+  libraryId: string,
+  flowId: string,
+): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "LibrarySettingsJSONDB",
+      mode: "update",
+      docID: libraryId,
+      obj: { flowId },
+    },
+  });
+}
+
+// --- Global settings ---
+
+export async function getSettings(): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "SettingsGlobalJSONDB",
+      mode: "getAll",
+      docID: "table1",
+      obj: {},
+    },
+  });
+}
+
+export async function updateSettings(
+  settingId: string,
+  updates: Record<string, unknown>,
+): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "SettingsGlobalJSONDB",
+      mode: "update",
+      docID: settingId,
+      obj: updates,
+    },
+  });
+}
+
+// --- Plugins ---
+
+export async function getPlugins(): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "PluginsJSONDB",
+      mode: "getAll",
+      docID: "table1",
+      obj: {},
+    },
+  });
+}
+
+export async function getPluginDetails(pluginId: string): Promise<unknown> {
+  return request("/api/v2/cruddb", "POST", {
+    data: {
+      collection: "PluginsJSONDB",
+      mode: "getById",
+      docID: pluginId,
+      obj: {},
+    },
+  });
+}
+
+// --- Node management ---
+
+export async function getNodes(): Promise<unknown> {
+  return request("/api/v2/get-nodes", "POST");
+}
+
+export async function updateNodeSettings(
+  nodeId: string,
+  settings: Record<string, unknown>,
+): Promise<unknown> {
+  return request("/api/v2/update-node", "POST", {
+    data: { nodeId, ...settings },
+  });
+}
+
+export async function getNodeLogs(
+  nodeId: string,
+  limit: number = 100,
+): Promise<unknown> {
+  return request("/api/v2/get-node-log", "POST", {
+    data: { nodeId, limit },
   });
 }
