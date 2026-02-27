@@ -31,7 +31,7 @@ async function request<T>(
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
+      body: method === "POST" ? JSON.stringify(body ?? {}) : undefined,
       signal: controller.signal,
     });
 
@@ -70,7 +70,7 @@ export async function getStatus(): Promise<unknown> {
 }
 
 export async function getWorkers(): Promise<unknown> {
-  return request("/api/v2/get-nodes", "POST");
+  return request("/api/v2/get-nodes", "GET");
 }
 
 export async function getLibraries(): Promise<unknown> {
@@ -88,7 +88,7 @@ export async function getLibraryStats(libraryId: string): Promise<unknown> {
   return request("/api/v2/cruddb", "POST", {
     data: {
       collection: "StatisticsJSONDB",
-      mode: "getById",
+      mode: "getAll",
       docID: libraryId,
       obj: {},
     },
@@ -108,7 +108,7 @@ export async function getQueue(): Promise<unknown> {
   return request("/api/v2/cruddb", "POST", {
     data: {
       collection: "StatisticsJSONDB",
-      mode: "getById",
+      mode: "getAll",
       docID: "table1",
       obj: {},
     },
@@ -121,7 +121,7 @@ export async function pauseWorker(
 ): Promise<unknown> {
   return request("/api/v2/alter-worker-limit", "POST", {
     data: {
-      nodeId,
+      nodeID: nodeId,
       workerType,
       numberToAdd: -99,
     },
@@ -135,7 +135,7 @@ export async function resumeWorker(
 ): Promise<unknown> {
   return request("/api/v2/alter-worker-limit", "POST", {
     data: {
-      nodeId,
+      nodeID: nodeId,
       workerType,
       numberToAdd: count,
     },
@@ -147,7 +147,7 @@ export async function resumeWorker(
 export async function getFlows(): Promise<unknown> {
   return request("/api/v2/cruddb", "POST", {
     data: {
-      collection: "FlowEditorJSONDB",
+      collection: "FlowsJSONDB",
       mode: "getAll",
       docID: "table1",
       obj: {},
@@ -158,7 +158,7 @@ export async function getFlows(): Promise<unknown> {
 export async function getFlow(flowId: string): Promise<unknown> {
   return request("/api/v2/cruddb", "POST", {
     data: {
-      collection: "FlowEditorJSONDB",
+      collection: "FlowsJSONDB",
       mode: "getById",
       docID: flowId,
       obj: {},
@@ -174,7 +174,7 @@ export async function createFlow(
   const id = randomUUID();
   const result = await request("/api/v2/cruddb", "POST", {
     data: {
-      collection: "FlowEditorJSONDB",
+      collection: "FlowsJSONDB",
       mode: "insert",
       docID: id,
       obj: { name, nodes, edges },
@@ -189,7 +189,7 @@ export async function updateFlow(
 ): Promise<unknown> {
   return request("/api/v2/cruddb", "POST", {
     data: {
-      collection: "FlowEditorJSONDB",
+      collection: "FlowsJSONDB",
       mode: "update",
       docID: flowId,
       obj: updates,
@@ -200,7 +200,7 @@ export async function updateFlow(
 export async function deleteFlow(flowId: string): Promise<unknown> {
   return request("/api/v2/cruddb", "POST", {
     data: {
-      collection: "FlowEditorJSONDB",
+      collection: "FlowsJSONDB",
       mode: "delete",
       docID: flowId,
       obj: {},
@@ -276,7 +276,7 @@ export async function getPluginDetails(pluginId: string): Promise<unknown> {
 // --- Node management ---
 
 export async function getNodes(): Promise<unknown> {
-  return request("/api/v2/get-nodes", "POST");
+  return request("/api/v2/get-nodes", "GET");
 }
 
 export async function updateNodeSettings(
@@ -284,15 +284,35 @@ export async function updateNodeSettings(
   settings: Record<string, unknown>,
 ): Promise<unknown> {
   return request("/api/v2/update-node", "POST", {
-    data: { nodeId, ...settings },
+    data: { nodeID: nodeId, ...settings },
   });
 }
 
 export async function getNodeLogs(
   nodeId: string,
   limit: number = 100,
-): Promise<unknown> {
-  return request("/api/v2/get-node-log", "POST", {
-    data: { nodeId, limit },
-  });
+): Promise<string> {
+  const url = `${TDARR_URL}/api/v2/get-node-log`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: { nodeID: nodeId, limit } }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new TdarrApiError(`Tdarr API error ${res.status}: ${text || res.statusText}`, res.status);
+    }
+    return await res.text();
+  } catch (err: unknown) {
+    if (err instanceof TdarrApiError) throw err;
+    const error = err as Error;
+    if (error.name === "AbortError") throw new TdarrApiError(`Tdarr request timeout after ${TIMEOUT_MS}ms`);
+    throw new TdarrApiError(`Tdarr request failed: ${error.message}`);
+  } finally {
+    clearTimeout(timeout);
+  }
 }

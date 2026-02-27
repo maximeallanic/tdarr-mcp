@@ -512,7 +512,7 @@ server.tool(
     try {
       const result = await getNodeLogs(node_id, limit);
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [{ type: "text", text: result }],
       };
     } catch (err) {
       logger.error(err, "get_node_logs failed");
