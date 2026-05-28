@@ -1,75 +1,87 @@
 # tdarr-mcp
 
-MCP server for interacting with [Tdarr](https://tdarr.io/) — a distributed transcoding system for video/audio libraries.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server for [Tdarr](https://tdarr.io) — the distributed media transcoding/health-check automation platform. It gives AI assistants (Claude Desktop, Claude Code, and any MCP-compatible client) programmatic control over a Tdarr server through its HTTP API.
 
-Exposes 21 tools for monitoring and controlling Tdarr via the Model Context Protocol.
+Speaks MCP over stdio and exposes **105 tools** across **12 categories**.
 
-## Tools
+## Features
 
-### Core
+| Category | Tools | Examples |
+| --- | --- | --- |
+| **Libraries** | 19 | scan, create/update/delete libraries, folder & filter settings, transcode/health-check options |
+| **Nodes** | 19 | list nodes & workers, pause/resume, set worker limits, reassign jobs |
+| **Server** | 18 | server status, settings, schedules, statistics, maintenance |
+| **Files** | 11 | search, bulk update/delete, create samples, inspect file records |
+| **Plugins** | 9 | list/get plugins, plugin stacks, community plugins |
+| **Stats** | 7 | transcode/health stats, space saved, processing history |
+| **Users** | 7 | list/create/update/delete users, auth settings |
+| **Backups** | 5 | create backup, status, reset |
+| **Jobs** | 5 | queue management, job control |
+| **Database** | 3 | `cruddb`, search DB, client queries |
+| **Automations** | 1 | run an automation |
+| **Processes** | 1 | process info |
 
-| Tool | Description |
-|------|-------------|
-| `get_status` | Get Tdarr server status (version, uptime) |
-| `get_workers` | List all workers/nodes with status and progress |
-| `get_libraries` | List all configured libraries |
-| `get_library_stats` | Get detailed stats for a specific library |
-| `scan_library` | Trigger a file scan on a library |
-| `get_queue` | Get queue status (pending, processing, error counts) |
-| `pause_worker` | Pause a worker by setting its limit to 0 |
-| `resume_worker` | Resume a paused worker |
+All tools are prefixed `tdarr_*` (e.g. `tdarr_get_nodes`, `tdarr_search_db`, `tdarr_run_automation`).
 
-### Flow management
+## Prerequisites
 
-| Tool | Description |
-|------|-------------|
-| `get_flows` | List all flows |
-| `get_flow` | Get a specific flow definition |
-| `create_flow` | Create a new flow |
-| `update_flow` | Update an existing flow |
-| `delete_flow` | Delete a flow |
-| `apply_flow_to_library` | Apply a flow to a library |
+- **Node.js ≥ 18** (uses the native `fetch` API), or **[Bun](https://bun.sh)**.
+- A running **[Tdarr](https://tdarr.io) server** reachable over HTTP.
 
-### Settings & plugins
+## Installation & build
 
-| Tool | Description |
-|------|-------------|
-| `get_settings` | Get all global settings |
-| `update_settings` | Update global settings |
-| `get_plugins` | List all available plugins |
-| `get_plugin_details` | Get details of a specific plugin |
+```bash
+git clone https://github.com/maximeallanic/tdarr-mcp.git
+cd tdarr-mcp
 
-### Node management
+# with Bun
+bun install
+bun run build      # tsc → dist/
 
-| Tool | Description |
-|------|-------------|
-| `get_nodes` | Get all nodes with full details (settings, workers, GPU/CPU, version) |
-| `update_node_settings` | Update settings of a specific node |
-| `get_node_logs` | Get recent log entries for a node |
+# …or with npm
+npm install
+npm run build
+```
+
+This compiles `src/` to `dist/`.
 
 ## Configuration
 
-| Env var | Default | Description |
-|---------|---------|-------------|
-| `TDARR_URL` | `http://192.168.0.1:8265` | Tdarr server URL |
+The server reads its target from environment variables:
 
-No authentication required (local network access).
+| Variable | Required | Description |
+| --- | --- | --- |
+| `TDARR_URL` | ❌ | Base URL of the Tdarr server. Defaults to `http://localhost:8265`. |
+| `TDARR_API_KEY` | ❌ | API key, sent as the `x-api-key` header. Only needed if your Tdarr instance has API auth enabled. |
 
-## Build & Run
+## Usage with an MCP client
+
+Add the server to your MCP client configuration (e.g. Claude Desktop / Claude Code `mcpServers` block):
+
+```json
+{
+  "mcpServers": {
+    "tdarr": {
+      "command": "node",
+      "args": ["/absolute/path/to/tdarr-mcp/dist/main.js"],
+      "env": {
+        "TDARR_URL": "http://your-tdarr-host:8265"
+      }
+    }
+  }
+}
+```
+
+During development you can run the TypeScript entry directly with Bun (no build step):
 
 ```bash
-npm install
-npm run build
-node dist/index.js
+TDARR_URL=http://your-tdarr-host:8265 bun run src/main.ts
 ```
 
-## Integration — docker-compose (media-manager)
+## How it works
 
-```yaml
-mcpServers:
-  tdarr:
-    command: node
-    args: ["/home/agent/tdarr-mcp/dist/index.js"]
-    env:
-      TDARR_URL: "http://192.168.0.1:8265"
-```
+Each tool is a thin declarative mapping (`TdarrToolDef`) to a Tdarr API endpoint: HTTP method, path (with `:param` substitution), and an input JSON schema. POST bodies are wrapped in `{ data: ... }` by default (Tdarr's convention) unless a tool sets `dataWrapped: false`. Responses are returned as pretty-printed JSON text.
+
+## License
+
+[MIT](./LICENSE) © Maxime Allanic

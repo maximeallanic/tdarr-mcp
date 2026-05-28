@@ -1,0 +1,165 @@
+import type { TdarrToolDef } from "./tools.js";
+
+export const TOOLS_SERVER: TdarrToolDef[] = [
+  {
+    name: "tdarr_status",
+    description: "Check server status",
+    method: "GET",
+    path: "/api/v2/status",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_is_server_alive",
+    description: "Check if the server is alive (legacy, prefer tdarr_status)",
+    method: "POST",
+    path: "/api/v2/is-server-alive",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_get_time_now",
+    description: "Get the current time on the server",
+    method: "POST",
+    path: "/api/v2/get-time-now",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_get_res_stats",
+    description: "Get server resource information",
+    method: "POST",
+    path: "/api/v2/get-res-stats",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_get_db_statuses",
+    description: "Get the statuses of the Tdarr database",
+    method: "POST",
+    path: "/api/v2/get-db-statuses",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_get_server_log",
+    description: "Get the server log",
+    method: "GET",
+    path: "/api/v2/get-server-log",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_debug",
+    description: "Get a page with various debug info",
+    method: "GET",
+    path: "/api/v2/debug",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_debug_vars",
+    description: "Get various debug info by type",
+    method: "GET",
+    path: "/api/v2/debug-vars/:type",
+    inputSchema: {
+      type: "object",
+      properties: {
+        type: { type: "string", description: "Debug variable type" },
+      },
+      required: ["type"],
+    },
+  },
+  {
+    name: "tdarr_restart_server",
+    description: "Restart Tdarr Server",
+    method: "POST",
+    path: "/api/v2/restart-server",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_restart_ui",
+    description: "Restart the Tdarr UI",
+    method: "GET",
+    path: "/api/v2/restart-ui",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_performance_stats",
+    description: "Get various performance stat info",
+    method: "POST",
+    path: "/api/v2/performance-stats",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_auth_status",
+    description: "Check Tdarr Pro status",
+    method: "POST",
+    path: "/api/v2/auth-status",
+    inputSchema: {
+      type: "object",
+      properties: {
+        saU: { type: "boolean", description: "Status check flag" },
+      },
+      required: ["saU"],
+    },
+  },
+  {
+    name: "tdarr_updater_check",
+    description: "Check if an update is available",
+    method: "POST",
+    path: "/api/v2/updater/check",
+    dataWrapped: false,
+    inputSchema: {
+      type: "object",
+      properties: {
+        resetUpdater: { type: "boolean", description: "Reset updater state" },
+        downloadUpdate: { type: "boolean", description: "Download update" },
+        applyUpdate: { type: "boolean", description: "Apply update" },
+      },
+      required: ["resetUpdater", "downloadUpdate", "applyUpdate"],
+    },
+  },
+  {
+    name: "tdarr_updater_package_index",
+    description: "Get the package index",
+    method: "POST",
+    path: "/api/v2/updater/package-index",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_updater_relaunch",
+    description: "Relaunch Tdarr Server when an update is ready",
+    method: "POST",
+    path: "/api/v2/updater/relaunch",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_use_token",
+    description: "Use a token",
+    method: "POST",
+    path: "/api/v2/use-token",
+    inputSchema: {
+      type: "object",
+      properties: {
+        token: { type: "string", description: "Token to use" },
+        redirect: { type: "string", description: "Redirect URL" },
+      },
+      required: ["token", "redirect"],
+    },
+  },
+  {
+    name: "tdarr_stop_dedupe",
+    description: "Stop the dedupe process",
+    method: "GET",
+    path: "/api/v2/stop-dedupe",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "tdarr_run_help_command",
+    description: "Run an ffmpeg or handbrake help command on the Help tab",
+    method: "POST",
+    path: "/api/v2/run-help-command",
+    inputSchema: {
+      type: "object",
+      properties: {
+        mode: { type: "string", description: "Command mode (ffmpeg/handbrake)" },
+        text: { type: "string", description: "Help command text" },
+      },
+      required: ["mode", "text"],
+    },
+  },
+];
